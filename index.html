@@ -280,16 +280,17 @@
             daysPassed += siklusKabisatH.includes(i) ? 355 : 354;
         }
         
+        // Perbaikan BUG di sini: daysInYear mewakili jumlah hari yang sudah berlalu
         let daysInYear = Math.floor(r - daysPassed);
         let hMonth = 1;
         
         while (true) {
             let daysInMonth = (hMonth % 2 !== 0) ? 30 : 29;
-            // Bulan Dzulhijjah bisa 30 hari jika tahun kabisat
             if (hMonth === 12 && siklusKabisatH.includes(y_cycle + 1)) {
                 daysInMonth = 30;
             }
-            if (daysInYear > daysInMonth) {
+            // Ubah menjadi >= agar saat genap 30 hari, otomatis pindah ke bulan depan
+            if (daysInYear >= daysInMonth) {
                 daysInYear -= daysInMonth;
                 hMonth++;
             } else {
@@ -297,8 +298,8 @@
             }
         }
         
-        let hDay = daysInYear;
-        if (hDay === 0) hDay = 1; // Fallback matematis
+        // Ditambah 1 karena daysInYear menghitung hari yang sudah lewat
+        let hDay = daysInYear + 1; 
 
         tampilkanHasil(`${hDay} ${bulanHijriah[hMonth - 1]} ${hYear} H`, jd);
     }
