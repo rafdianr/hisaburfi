@@ -118,6 +118,28 @@
         button:hover {
             background-color: var(--primary-dark);
         }
+        
+        /* Tombol Today Khusus Masehi */
+        .btn-today {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            width: auto;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-today:hover {
+            background-color: #d1d5db;
+        }
+        .today-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
         .result-box {
             margin-top: 24px;
             padding: 16px;
@@ -147,7 +169,6 @@
             display: block;
         }
         
-        /* Style for System Time Footer */
         .system-time-container {
             width: 100%;
             max-width: 450px;
@@ -182,6 +203,13 @@
     <div class="content">
         <!-- MODE 1: MASEHI KE HIJRIAH -->
         <div id="m2h-section" class="mode-section active">
+            <!-- Tombol Set Hari Ini -->
+            <div class="today-container">
+                <button class="btn-today" onclick="setToday()">
+                    📅 Set Hari Ini
+                </button>
+            </div>
+            
             <div class="form-group">
                 <div class="input-group day">
                     <label>Tanggal</label>
@@ -261,6 +289,19 @@
     const bulanMasehi = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const bulanHijriah = ["Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqa'dah", "Dzulhijjah"];
     const siklusKabisatH = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+
+    // --- FITUR SET HARI INI (TODAY) ---
+    function setToday() {
+        const today = new Date();
+        document.getElementById('m-year').value = today.getFullYear();
+        document.getElementById('m-month').value = today.getMonth() + 1; // getMonth dimulai dari 0
+        
+        // Update batas hari di dropdown bulan/tahun ini
+        updateDaysMasehi();
+        
+        // Setelah dropdown di-update, set nilai tanggalnya
+        document.getElementById('m-day').value = today.getDate();
+    }
 
     // --- FITUR AUTO-ADJUST TANGGAL MASEHI ---
     function updateDaysMasehi() {
@@ -354,7 +395,6 @@
         return 1948439.5 + days - 1; 
     }
 
-    // --- FUNGSI HELPER: JDN ke Obyek Tanggal ---
     function jdToHijriah(jd) {
         let n = Math.floor(jd) + 0.5 - 1948439.5;
         let l = Math.floor(n / 10631);
@@ -406,7 +446,7 @@
 
         let jd = getJulianDay(y, m, d);
         let hSebelum = jdToHijriah(jd); 
-        let hSetelah = jdToHijriah(jd + 1); // Tambah 1 hari untuk waktu setelah maghrib
+        let hSetelah = jdToHijriah(jd + 1);
 
         let teksHasil = `
             ${hSebelum.day} ${bulanHijriah[hSebelum.month - 1]} ${hSebelum.year} H <span style="font-size:0.85rem; color:#059669;">(Sebelum Maghrib)</span><br>
@@ -423,7 +463,7 @@
         if(!hd || !hy) return alert("Masukkan tahun yang valid!");
 
         let jd = getJulianDayFromHijriah(hy, hm, hd);
-        let mSetelah = jdToMasehi(jd - 1); // Hari Hijriah dimulai malam sebelumnya
+        let mSetelah = jdToMasehi(jd - 1); 
         let mSebelum = jdToMasehi(jd);
 
         let teksHasil = `
@@ -436,7 +476,7 @@
 
     function tampilkanHasil(teks, jd) {
         let container = document.getElementById('result-container');
-        document.getElementById('result-text').innerHTML = teks; // Pakai innerHTML karena pakai tag <br> dan <span>
+        document.getElementById('result-text').innerHTML = teks;
         document.getElementById('result-jd').innerText = `Base Julian Day: ${jd}`;
         container.style.display = 'block';
     }
