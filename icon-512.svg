@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <!-- Background Kotak Melengkung -->
+    <rect width="512" height="512" rx="112" fill="#10b981"/>
+    
+    <!-- Ikon Bulan Sabit -->
+    <path d="M352 144a144 144 0 1 1-144-144 144 144 0 0 0 144 144z" fill="#ffffff"/>
+    
+    <!-- Teks Inisial -->
+    <text x="256" y="380" font-size="120" font-family="'Segoe UI', Tahoma, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">MH</text>
+</svg>

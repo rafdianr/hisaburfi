@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Masehi & Hijriah Interaktif</title>
+    
+    <!-- PWA Setup -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="apple-touch-icon" href="/icon-192.svg">
+    <meta name="description" content="Kalkulator konversi tanggal Masehi ke Hijriah dan sebaliknya dengan akurasi sebelum/sesudah waktu Maghrib.">
+    
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .calculator {
+            background: var(--card);
+            width: 100%;
+            max-width: 450px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .header {
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 24px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        .tabs {
+            display: flex;
+            background: #f9fafb;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            color: #6b7280;
+            transition: 0.3s;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background: white;
+        }
+        .content {
+            padding: 24px;
+        }
+        .form-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4b5563;
+        }
+        select, input {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+            background-color: white;
+        }
+        select:focus, input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        .input-group.day { flex: 0.8; }
+        .input-group.month { flex: 1.5; }
+        .input-group.year { flex: 1; }
+        
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-today {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            width: auto;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-today:hover {
+            background-color: #d1d5db;
+        }
+        .today-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .result-box {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .result-box h3 {
+            color: var(--primary-dark);
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .result-box p {
+            color: #065f46;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            border-top: 1px dashed #a7f3d0;
+            padding-top: 10px;
+        }
+        .mode-section {
+            display: none;
+        }
+        .mode-section.active {
+            display: block;
+        }
+        
+        .system-time-container {
+            width: 100%;
+            max-width: 450px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            color: #4b5563;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .system-time-container span {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <div class="header">
+        <h1>Kalkulator Hijriah</h1>
+        <p style="font-size: 0.9rem; opacity: 0.9;">Akurasi Waktu Maghrib</p>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchMode('m2h')">Masehi ➔ Hijriah</div>
+        <div class="tab" onclick="switchMode('h2m')">Hijriah ➔ Masehi</div>
+    </div>
+
+    <div class="content">
+        <!-- MODE 1: MASEHI KE HIJRIAH -->
+        <div id="m2h-section" class="mode-section active">
+            <div class="today-container">
+                <button class="btn-today" onclick="setToday()">
+                    📅 Set Hari Ini
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <div class="input-group day">
+                    <label>Tanggal</label>
+                    <select id="m-day"></select>
+                </div>
+                <div class="input-group month">
+                    <label>Bulan</label>
+                    <select id="m-month" onchange="updateDaysMasehi()">
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Maret</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Juni</option>
+                        <option value="7">Juli</option>
+                        <option value="8">Agustus</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12" selected>Desember</option>
+                    </select>
+                </div>
+                <div class="input-group year">
+                    <label>Tahun</label>
+                    <input type="number" id="m-year" value="1984" oninput="updateDaysMasehi()" onchange="updateDaysMasehi()">
+                </div>
+            </div>
+            <button onclick="convertM2H()">Konversi ke Hijriah</button>
+        </div>
+
+        <!-- MODE 2: HIJRIAH KE MASEHI -->
+        <div id="h2m-section" class="mode-section">
+            <div class="form-group">
+                <div class="input-group day">
+                    <label>Tanggal</label>
+                    <select id="h-day"></select>
+                </div>
+                <div class="input-group month">
+                    <label>Bulan</label>
+                    <select id="h-month" onchange="updateDaysHijriah()">
+                        <option value="1">Muharram</option>
+                        <option value="2">Safar</option>
+                        <option value="3" selected>Rabiul Awal</option>
+                        <option value="4">Rabiul Akhir</option>
+                        <option value="5">Jumadil Awal</option>
+                        <option value="6">Jumadil Akhir</option>
+                        <option value="7">Rajab</option>
+                        <option value="8">Sya'ban</option>
+                        <option value="9">Ramadhan</option>
+                        <option value="10">Syawal</option>
+                        <option value="11">Dzulqa'dah</option>
+                        <option value="12">Dzulhijjah</option>
+                    </select>
+                </div>
+                <div class="input-group year">
+                    <label>Tahun (H)</label>
+                    <input type="number" id="h-year" value="1405" oninput="updateDaysHijriah()" onchange="updateDaysHijriah()">
+                </div>
+            </div>
+            <button onclick="convertH2M()">Konversi ke Masehi</button>
+        </div>
+
+        <div class="result-box" id="result-container">
+            <h3 id="result-text"></h3>
+            <p id="result-jd"></p>
+        </div>
+    </div>
+</div>
+
+<div class="system-time-container">
+    Waktu Sistem Saat Ini:<br>
+    <span id="sys-time">Loading...</span>
+</div>
+
+<script>
+    // --- Register Service Worker ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW Registered!', reg))
+                .catch(err => console.error('SW Error!', err));
+        });
+    }
+
+    // --- Logika Kalkulator ---
+    const bulanMasehi = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const bulanHijriah = ["Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqa'dah", "Dzulhijjah"];
+    const siklusKabisatH = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+
+    function setToday() {
+        const today = new Date();
+        document.getElementById('m-year').value = today.getFullYear();
+        document.getElementById('m-month').value = today.getMonth() + 1; 
+        updateDaysMasehi();
+        document.getElementById('m-day').value = today.getDate();
+    }
+
+    function updateDaysMasehi() {
+        let m = parseInt(document.getElementById('m-month').value);
+        let y = parseInt(document.getElementById('m-year').value) || new Date().getFullYear();
+        let daySelect = document.getElementById('m-day');
+        
+        let currentSelectedDay = parseInt(daySelect.value) || 8; 
+        let maxDays = 31;
+        if ([4, 6, 9, 11].includes(m)) {
+            maxDays = 30;
+        } else if (m === 2) {
+            let isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+            maxDays = isLeap ? 29 : 28;
+        }
+
+        daySelect.innerHTML = "";
+        for (let i = 1; i <= maxDays; i++) {
+            let option = document.createElement("option");
+            option.value = i;
+            option.text = i;
+            daySelect.appendChild(option);
+        }
+        
+        daySelect.value = currentSelectedDay > maxDays ? maxDays : currentSelectedDay;
+    }
+
+    function updateDaysHijriah() {
+        let m = parseInt(document.getElementById('h-month').value);
+        let y = parseInt(document.getElementById('h-year').value) || 1445;
+        let daySelect = document.getElementById('h-day');
+        
+        let currentSelectedDay = parseInt(daySelect.value) || 14; 
+        let maxDays = (m % 2 !== 0) ? 30 : 29;
+        
+        if (m === 12) {
+            let modYear = y % 30;
+            let cycleYear = (modYear === 0) ? 30 : modYear;
+            if (siklusKabisatH.includes(cycleYear)) maxDays = 30;
+        }
+
+        daySelect.innerHTML = "";
+        for (let i = 1; i <= maxDays; i++) {
+            let option = document.createElement("option");
+            option.value = i;
+            option.text = i;
+            daySelect.appendChild(option);
+        }
+        
+        daySelect.value = currentSelectedDay > maxDays ? maxDays : currentSelectedDay;
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+        document.getElementById('sys-time').innerText = now.toLocaleDateString('id-ID', options) + " WIB";
+    }
+
+    function switchMode(mode) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('result-container').style.display = 'none';
+
+        if(mode === 'm2h') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('m2h-section').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('h2m-section').classList.add('active');
+        }
+    }
+
+    function getJulianDay(year, month, day) {
+        if (month <= 2) { year -= 1; month += 12; }
+        let A = Math.floor(year / 100);
+        let B = 2 - A + Math.floor(A / 4);
+        return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
+    }
+
+    function getJulianDayFromHijriah(hy, hm, hd) {
+        let l = Math.floor((hy - 1) / 30);
+        let y_cycle = (hy - 1) % 30;
+        let days = l * 10631;
+        for (let i = 1; i <= y_cycle; i++) { days += siklusKabisatH.includes(i) ? 355 : 354; }
+        for (let i = 1; i < hm; i++) { days += (i % 2 !== 0) ? 30 : 29; }
+        days += hd;
+        return 1948439.5 + days - 1; 
+    }
+
+    function jdToHijriah(jd) {
+        let n = Math.floor(jd) + 0.5 - 1948439.5;
+        let l = Math.floor(n / 10631);
+        let r = n - (10631 * l);
+        
+        let y_cycle = Math.floor((r - 0.139) / 354.366);
+        let hYear = (30 * l) + y_cycle + 1;
+        
+        let daysPassed = 0;
+        for (let i = 1; i <= y_cycle; i++) {
+            daysPassed += siklusKabisatH.includes(i) ? 355 : 354;
+        }
+        
+        let daysInYear = Math.floor(r - daysPassed);
+        let hMonth = 1;
+        
+        while (true) {
+            let daysInMonth = (hMonth % 2 !== 0) ? 30 : 29;
+            if (hMonth === 12 && siklusKabisatH.includes(y_cycle + 1)) daysInMonth = 30;
+            if (daysInYear >= daysInMonth) {
+                daysInYear -= daysInMonth;
+                hMonth++;
+            } else break;
+        }
+        return { day: daysInYear + 1, month: hMonth, year: hYear };
+    }
+
+    function jdToMasehi(jd) {
+        let Z = Math.floor(jd + 0.5);
+        let alpha = Math.floor((Z - 1867216.25) / 36524.25);
+        let A = Z + 1 + alpha - Math.floor(alpha / 4);
+        let B = A + 1524;
+        let C = Math.floor((B - 122.1) / 365.25);
+        let D = Math.floor(365.25 * C);
+        let E = Math.floor((B - D) / 30.6001);
+        
+        let mDay = Math.floor(B - D - Math.floor(30.6001 * E));
+        let mMonth = E <= 13 ? E - 1 : E - 13;
+        let mYear = mMonth > 2 ? C - 4716 : C - 4715;
+        return { day: mDay, month: mMonth, year: mYear };
+    }
+
+    function convertM2H() {
+        let d = parseInt(document.getElementById('m-day').value);
+        let m = parseInt(document.getElementById('m-month').value);
+        let y = parseInt(document.getElementById('m-year').value);
+        if(!d || !y) return alert("Masukkan tahun yang valid!");
+
+        let jd = getJulianDay(y, m, d);
+        let hSebelum = jdToHijriah(jd); 
+        let hSetelah = jdToHijriah(jd + 1);
+
+        let teksHasil = `
+            ${hSebelum.day} ${bulanHijriah[hSebelum.month - 1]} ${hSebelum.year} H <span style="font-size:0.85rem; color:#059669;">(Sebelum Maghrib)</span><br>
+            <span style="font-size:0.9rem; color:#6b7280;">Atau</span><br>
+            ${hSetelah.day} ${bulanHijriah[hSetelah.month - 1]} ${hSetelah.year} H <span style="font-size:0.85rem; color:#059669;">(Setelah Maghrib)</span>
+        `;
+        tampilkanHasil(teksHasil, jd);
+    }
+
+    function convertH2M() {
+        let hd = parseInt(document.getElementById('h-day').value);
+        let hm = parseInt(document.getElementById('h-month').value);
+        let hy = parseInt(document.getElementById('h-year').value);
+        if(!hd || !hy) return alert("Masukkan tahun yang valid!");
+
+        let jd = getJulianDayFromHijriah(hy, hm, hd);
+        let mSetelah = jdToMasehi(jd - 1); 
+        let mSebelum = jdToMasehi(jd);
+
+        let teksHasil = `
+            ${mSetelah.day} ${bulanMasehi[mSetelah.month - 1]} ${mSetelah.year} <span style="font-size:0.85rem; color:#059669;">(Setelah Maghrib)</span><br>
+            <span style="font-size:0.9rem; color:#6b7280;">Hingga</span><br>
+            ${mSebelum.day} ${bulanMasehi[mSebelum.month - 1]} ${mSebelum.year} <span style="font-size:0.85rem; color:#059669;">(Sebelum Maghrib)</span>
+        `;
+        tampilkanHasil(teksHasil, jd);
+    }
+
+    function tampilkanHasil(teks, jd) {
+        let container = document.getElementById('result-container');
+        document.getElementById('result-text').innerHTML = teks;
+        document.getElementById('result-jd').innerText = `Base Julian Day: ${jd}`;
+        container.style.display = 'block';
+    }
+
+    window.onload = function() {
+        updateDaysMasehi();
+        updateDaysHijriah();
+        updateClock();
+        setInterval(updateClock, 1000); 
+    };
+</script>
+
+</body>
+</html>
