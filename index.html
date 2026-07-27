@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator Masehi & Hijriah</title>
+    <title>Kalkulator Masehi & Hijriah Interaktif</title>
     <style>
         :root {
             --primary: #10b981;
@@ -23,6 +23,7 @@
             background-color: var(--bg);
             color: var(--text);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -35,6 +36,7 @@
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             overflow: hidden;
+            margin-bottom: 20px;
         }
         .header {
             background-color: var(--primary);
@@ -91,6 +93,7 @@
             font-size: 1rem;
             outline: none;
             transition: 0.3s;
+            background-color: white;
         }
         select:focus, input:focus {
             border-color: var(--primary);
@@ -139,6 +142,24 @@
         .mode-section.active {
             display: block;
         }
+        
+        /* Style for System Time Footer */
+        .system-time-container {
+            width: 100%;
+            max-width: 450px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            color: #4b5563;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .system-time-container span {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -160,11 +181,11 @@
             <div class="form-group">
                 <div class="input-group day">
                     <label>Tanggal</label>
-                    <input type="number" id="m-day" min="1" max="31" value="8">
+                    <select id="m-day"></select>
                 </div>
                 <div class="input-group month">
                     <label>Bulan</label>
-                    <select id="m-month">
+                    <select id="m-month" onchange="updateDaysMasehi()">
                         <option value="1">Januari</option>
                         <option value="2">Februari</option>
                         <option value="3">Maret</option>
@@ -181,7 +202,7 @@
                 </div>
                 <div class="input-group year">
                     <label>Tahun</label>
-                    <input type="number" id="m-year" value="1984">
+                    <input type="number" id="m-year" value="1984" oninput="updateDaysMasehi()" onchange="updateDaysMasehi()">
                 </div>
             </div>
             <button onclick="convertM2H()">Konversi ke Hijriah</button>
@@ -192,11 +213,11 @@
             <div class="form-group">
                 <div class="input-group day">
                     <label>Tanggal</label>
-                    <input type="number" id="h-day" min="1" max="30" value="14">
+                    <select id="h-day"></select>
                 </div>
                 <div class="input-group month">
                     <label>Bulan</label>
-                    <select id="h-month">
+                    <select id="h-month" onchange="updateDaysHijriah()">
                         <option value="1">Muharram</option>
                         <option value="2">Safar</option>
                         <option value="3" selected>Rabiul Awal</option>
@@ -213,7 +234,7 @@
                 </div>
                 <div class="input-group year">
                     <label>Tahun (H)</label>
-                    <input type="number" id="h-year" value="1405">
+                    <input type="number" id="h-year" value="1405" oninput="updateDaysHijriah()" onchange="updateDaysHijriah()">
                 </div>
             </div>
             <button onclick="convertH2M()">Konversi ke Masehi</button>
@@ -226,11 +247,103 @@
     </div>
 </div>
 
+<!-- Footer Penunjuk Waktu Sistem -->
+<div class="system-time-container">
+    Waktu Sistem Saat Ini:<br>
+    <span id="sys-time">Loading...</span>
+</div>
+
 <script>
-    // Data Nama Bulan
     const bulanMasehi = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const bulanHijriah = ["Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqa'dah", "Dzulhijjah"];
     const siklusKabisatH = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+
+    // --- FITUR AUTO-ADJUST TANGGAL MASEHI ---
+    function updateDaysMasehi() {
+        let m = parseInt(document.getElementById('m-month').value);
+        let y = parseInt(document.getElementById('m-year').value) || new Date().getFullYear();
+        let daySelect = document.getElementById('m-day');
+        
+        let currentSelectedDay = parseInt(daySelect.value) || 8; 
+        
+        let maxDays = 31;
+        if ([4, 6, 9, 11].includes(m)) {
+            maxDays = 30;
+        } else if (m === 2) {
+            let isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+            maxDays = isLeap ? 29 : 28;
+        }
+
+        // Hapus opsi lama
+        daySelect.innerHTML = "";
+        
+        // Buat opsi baru
+        for (let i = 1; i <= maxDays; i++) {
+            let option = document.createElement("option");
+            option.value = i;
+            option.text = i;
+            daySelect.appendChild(option);
+        }
+        
+        // Kembalikan ke tanggal sebelumnya jika masih valid, atau set mentok di batas max
+        if (currentSelectedDay > maxDays) {
+            daySelect.value = maxDays;
+        } else {
+            daySelect.value = currentSelectedDay;
+        }
+    }
+
+    // --- FITUR AUTO-ADJUST TANGGAL HIJRIAH ---
+    function updateDaysHijriah() {
+        let m = parseInt(document.getElementById('h-month').value);
+        let y = parseInt(document.getElementById('h-year').value) || 1445;
+        let daySelect = document.getElementById('h-day');
+        
+        let currentSelectedDay = parseInt(daySelect.value) || 14; 
+        
+        // Bulan ganjil (Muharram, Rabiul Awal, dll) 30 hari. Bulan Genap 29 hari.
+        let maxDays = (m % 2 !== 0) ? 30 : 29;
+        
+        // Khusus Dzulhijjah (Bulan 12), bisa 30 hari jika tahun kabisat
+        if (m === 12) {
+            let modYear = y % 30;
+            let cycleYear = (modYear === 0) ? 30 : modYear;
+            if (siklusKabisatH.includes(cycleYear)) {
+                maxDays = 30;
+            }
+        }
+
+        daySelect.innerHTML = "";
+        for (let i = 1; i <= maxDays; i++) {
+            let option = document.createElement("option");
+            option.value = i;
+            option.text = i;
+            daySelect.appendChild(option);
+        }
+        
+        if (currentSelectedDay > maxDays) {
+            daySelect.value = maxDays;
+        } else {
+            daySelect.value = currentSelectedDay;
+        }
+    }
+
+    // --- FITUR JAM REAL-TIME ---
+    function updateClock() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: false
+        };
+        // Menggunakan locale 'id-ID' untuk bahasa Indonesia
+        document.getElementById('sys-time').innerText = now.toLocaleDateString('id-ID', options) + " WIB";
+    }
 
     // Fungsi UI Switch Tab
     function switchMode(mode) {
@@ -264,7 +377,7 @@
         let m = parseInt(document.getElementById('m-month').value);
         let y = parseInt(document.getElementById('m-year').value);
 
-        if(!d || !y) return alert("Masukkan tanggal dan tahun yang valid!");
+        if(!d || !y) return alert("Masukkan tahun yang valid!");
 
         let jd = getJulianDay(y, m, d);
         let jdNormalized = Math.floor(jd) + 0.5;
@@ -280,7 +393,6 @@
             daysPassed += siklusKabisatH.includes(i) ? 355 : 354;
         }
         
-        // Perbaikan BUG di sini: daysInYear mewakili jumlah hari yang sudah berlalu
         let daysInYear = Math.floor(r - daysPassed);
         let hMonth = 1;
         
@@ -289,7 +401,6 @@
             if (hMonth === 12 && siklusKabisatH.includes(y_cycle + 1)) {
                 daysInMonth = 30;
             }
-            // Ubah menjadi >= agar saat genap 30 hari, otomatis pindah ke bulan depan
             if (daysInYear >= daysInMonth) {
                 daysInYear -= daysInMonth;
                 hMonth++;
@@ -298,9 +409,7 @@
             }
         }
         
-        // Ditambah 1 karena daysInYear menghitung hari yang sudah lewat
         let hDay = daysInYear + 1; 
-
         tampilkanHasil(`${hDay} ${bulanHijriah[hMonth - 1]} ${hYear} H`, jd);
     }
 
@@ -310,7 +419,7 @@
         let hm = parseInt(document.getElementById('h-month').value);
         let hy = parseInt(document.getElementById('h-year').value);
 
-        if(!hd || !hy) return alert("Masukkan tanggal dan tahun yang valid!");
+        if(!hd || !hy) return alert("Masukkan tahun yang valid!");
 
         let l = Math.floor((hy - 1) / 30);
         let y_cycle = (hy - 1) % 30;
@@ -325,9 +434,8 @@
         }
         days += hd;
         
-        let jd = 1948439.5 + days - 1; // -1 untuk mengakomodasi hari berjalan
+        let jd = 1948439.5 + days - 1; 
         
-        // Julian Day ke Gregorian
         let Z = Math.floor(jd + 0.5);
         let alpha = Math.floor((Z - 1867216.25) / 36524.25);
         let A = Z + 1 + alpha - Math.floor(alpha / 4);
@@ -349,6 +457,14 @@
         document.getElementById('result-jd').innerText = `Nilai Julian Day: ${jd}`;
         container.style.display = 'block';
     }
+
+    // Inisialisasi awal saat halaman dimuat
+    window.onload = function() {
+        updateDaysMasehi();
+        updateDaysHijriah();
+        updateClock();
+        setInterval(updateClock, 1000); // Update jam setiap detik
+    };
 </script>
 
 </body>
