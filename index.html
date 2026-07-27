@@ -129,12 +129,16 @@
         }
         .result-box h3 {
             color: var(--primary-dark);
-            font-size: 1.25rem;
-            margin-bottom: 4px;
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+            line-height: 1.4;
         }
         .result-box p {
             color: #065f46;
             font-size: 0.9rem;
+            margin-top: 10px;
+            border-top: 1px dashed #a7f3d0;
+            padding-top: 10px;
         }
         .mode-section {
             display: none;
@@ -167,7 +171,7 @@
 <div class="calculator">
     <div class="header">
         <h1>Kalkulator Hijriah</h1>
-        <p style="font-size: 0.9rem; opacity: 0.9;">Konversi Berbasis Julian Day Number</p>
+        <p style="font-size: 0.9rem; opacity: 0.9;">Akurasi Waktu Maghrib</p>
     </div>
     
     <div class="tabs">
@@ -265,7 +269,6 @@
         let daySelect = document.getElementById('m-day');
         
         let currentSelectedDay = parseInt(daySelect.value) || 8; 
-        
         let maxDays = 31;
         if ([4, 6, 9, 11].includes(m)) {
             maxDays = 30;
@@ -274,10 +277,7 @@
             maxDays = isLeap ? 29 : 28;
         }
 
-        // Hapus opsi lama
         daySelect.innerHTML = "";
-        
-        // Buat opsi baru
         for (let i = 1; i <= maxDays; i++) {
             let option = document.createElement("option");
             option.value = i;
@@ -285,12 +285,7 @@
             daySelect.appendChild(option);
         }
         
-        // Kembalikan ke tanggal sebelumnya jika masih valid, atau set mentok di batas max
-        if (currentSelectedDay > maxDays) {
-            daySelect.value = maxDays;
-        } else {
-            daySelect.value = currentSelectedDay;
-        }
+        daySelect.value = currentSelectedDay > maxDays ? maxDays : currentSelectedDay;
     }
 
     // --- FITUR AUTO-ADJUST TANGGAL HIJRIAH ---
@@ -300,17 +295,12 @@
         let daySelect = document.getElementById('h-day');
         
         let currentSelectedDay = parseInt(daySelect.value) || 14; 
-        
-        // Bulan ganjil (Muharram, Rabiul Awal, dll) 30 hari. Bulan Genap 29 hari.
         let maxDays = (m % 2 !== 0) ? 30 : 29;
         
-        // Khusus Dzulhijjah (Bulan 12), bisa 30 hari jika tahun kabisat
         if (m === 12) {
             let modYear = y % 30;
             let cycleYear = (modYear === 0) ? 30 : modYear;
-            if (siklusKabisatH.includes(cycleYear)) {
-                maxDays = 30;
-            }
+            if (siklusKabisatH.includes(cycleYear)) maxDays = 30;
         }
 
         daySelect.innerHTML = "";
@@ -321,31 +311,17 @@
             daySelect.appendChild(option);
         }
         
-        if (currentSelectedDay > maxDays) {
-            daySelect.value = maxDays;
-        } else {
-            daySelect.value = currentSelectedDay;
-        }
+        daySelect.value = currentSelectedDay > maxDays ? maxDays : currentSelectedDay;
     }
 
     // --- FITUR JAM REAL-TIME ---
     function updateClock() {
         const now = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit',
-            hour12: false
-        };
-        // Menggunakan locale 'id-ID' untuk bahasa Indonesia
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
         document.getElementById('sys-time').innerText = now.toLocaleDateString('id-ID', options) + " WIB";
     }
 
-    // Fungsi UI Switch Tab
+    // --- FUNGSI UI SWITCH TAB ---
     function switchMode(mode) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
@@ -360,28 +336,27 @@
         }
     }
 
-    // ALGORITMA: Masehi ke Julian Day
+    // --- FUNGSI HELPER JDN ---
     function getJulianDay(year, month, day) {
-        if (month <= 2) {
-            year -= 1;
-            month += 12;
-        }
+        if (month <= 2) { year -= 1; month += 12; }
         let A = Math.floor(year / 100);
         let B = 2 - A + Math.floor(A / 4);
         return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
     }
 
-    // ALGORITMA: Konversi Masehi ke Hijriah
-    function convertM2H() {
-        let d = parseInt(document.getElementById('m-day').value);
-        let m = parseInt(document.getElementById('m-month').value);
-        let y = parseInt(document.getElementById('m-year').value);
+    function getJulianDayFromHijriah(hy, hm, hd) {
+        let l = Math.floor((hy - 1) / 30);
+        let y_cycle = (hy - 1) % 30;
+        let days = l * 10631;
+        for (let i = 1; i <= y_cycle; i++) { days += siklusKabisatH.includes(i) ? 355 : 354; }
+        for (let i = 1; i < hm; i++) { days += (i % 2 !== 0) ? 30 : 29; }
+        days += hd;
+        return 1948439.5 + days - 1; 
+    }
 
-        if(!d || !y) return alert("Masukkan tahun yang valid!");
-
-        let jd = getJulianDay(y, m, d);
-        let jdNormalized = Math.floor(jd) + 0.5;
-        let n = jdNormalized - 1948439.5;
+    // --- FUNGSI HELPER: JDN ke Obyek Tanggal ---
+    function jdToHijriah(jd) {
+        let n = Math.floor(jd) + 0.5 - 1948439.5;
         let l = Math.floor(n / 10631);
         let r = n - (10631 * l);
         
@@ -398,44 +373,16 @@
         
         while (true) {
             let daysInMonth = (hMonth % 2 !== 0) ? 30 : 29;
-            if (hMonth === 12 && siklusKabisatH.includes(y_cycle + 1)) {
-                daysInMonth = 30;
-            }
+            if (hMonth === 12 && siklusKabisatH.includes(y_cycle + 1)) daysInMonth = 30;
             if (daysInYear >= daysInMonth) {
                 daysInYear -= daysInMonth;
                 hMonth++;
-            } else {
-                break;
-            }
+            } else break;
         }
-        
-        let hDay = daysInYear + 1; 
-        tampilkanHasil(`${hDay} ${bulanHijriah[hMonth - 1]} ${hYear} H`, jd);
+        return { day: daysInYear + 1, month: hMonth, year: hYear };
     }
 
-    // ALGORITMA: Konversi Hijriah ke Masehi
-    function convertH2M() {
-        let hd = parseInt(document.getElementById('h-day').value);
-        let hm = parseInt(document.getElementById('h-month').value);
-        let hy = parseInt(document.getElementById('h-year').value);
-
-        if(!hd || !hy) return alert("Masukkan tahun yang valid!");
-
-        let l = Math.floor((hy - 1) / 30);
-        let y_cycle = (hy - 1) % 30;
-        
-        let days = l * 10631;
-        for (let i = 1; i <= y_cycle; i++) {
-            days += siklusKabisatH.includes(i) ? 355 : 354;
-        }
-        
-        for (let i = 1; i < hm; i++) {
-            days += (i % 2 !== 0) ? 30 : 29;
-        }
-        days += hd;
-        
-        let jd = 1948439.5 + days - 1; 
-        
+    function jdToMasehi(jd) {
         let Z = Math.floor(jd + 0.5);
         let alpha = Math.floor((Z - 1867216.25) / 36524.25);
         let A = Z + 1 + alpha - Math.floor(alpha / 4);
@@ -447,23 +394,58 @@
         let mDay = Math.floor(B - D - Math.floor(30.6001 * E));
         let mMonth = E <= 13 ? E - 1 : E - 13;
         let mYear = mMonth > 2 ? C - 4716 : C - 4715;
+        return { day: mDay, month: mMonth, year: mYear };
+    }
 
-        tampilkanHasil(`${mDay} ${bulanMasehi[mMonth - 1]} ${mYear}`, jd);
+    // --- ALGORITMA UTAMA KONVERSI ---
+    function convertM2H() {
+        let d = parseInt(document.getElementById('m-day').value);
+        let m = parseInt(document.getElementById('m-month').value);
+        let y = parseInt(document.getElementById('m-year').value);
+        if(!d || !y) return alert("Masukkan tahun yang valid!");
+
+        let jd = getJulianDay(y, m, d);
+        let hSebelum = jdToHijriah(jd); 
+        let hSetelah = jdToHijriah(jd + 1); // Tambah 1 hari untuk waktu setelah maghrib
+
+        let teksHasil = `
+            ${hSebelum.day} ${bulanHijriah[hSebelum.month - 1]} ${hSebelum.year} H <span style="font-size:0.85rem; color:#059669;">(Sebelum Maghrib)</span><br>
+            <span style="font-size:0.9rem; color:#6b7280;">Atau</span><br>
+            ${hSetelah.day} ${bulanHijriah[hSetelah.month - 1]} ${hSetelah.year} H <span style="font-size:0.85rem; color:#059669;">(Setelah Maghrib)</span>
+        `;
+        tampilkanHasil(teksHasil, jd);
+    }
+
+    function convertH2M() {
+        let hd = parseInt(document.getElementById('h-day').value);
+        let hm = parseInt(document.getElementById('h-month').value);
+        let hy = parseInt(document.getElementById('h-year').value);
+        if(!hd || !hy) return alert("Masukkan tahun yang valid!");
+
+        let jd = getJulianDayFromHijriah(hy, hm, hd);
+        let mSetelah = jdToMasehi(jd - 1); // Hari Hijriah dimulai malam sebelumnya
+        let mSebelum = jdToMasehi(jd);
+
+        let teksHasil = `
+            ${mSetelah.day} ${bulanMasehi[mSetelah.month - 1]} ${mSetelah.year} <span style="font-size:0.85rem; color:#059669;">(Setelah Maghrib)</span><br>
+            <span style="font-size:0.9rem; color:#6b7280;">Hingga</span><br>
+            ${mSebelum.day} ${bulanMasehi[mSebelum.month - 1]} ${mSebelum.year} <span style="font-size:0.85rem; color:#059669;">(Sebelum Maghrib)</span>
+        `;
+        tampilkanHasil(teksHasil, jd);
     }
 
     function tampilkanHasil(teks, jd) {
         let container = document.getElementById('result-container');
-        document.getElementById('result-text').innerText = teks;
-        document.getElementById('result-jd').innerText = `Nilai Julian Day: ${jd}`;
+        document.getElementById('result-text').innerHTML = teks; // Pakai innerHTML karena pakai tag <br> dan <span>
+        document.getElementById('result-jd').innerText = `Base Julian Day: ${jd}`;
         container.style.display = 'block';
     }
 
-    // Inisialisasi awal saat halaman dimuat
     window.onload = function() {
         updateDaysMasehi();
         updateDaysHijriah();
         updateClock();
-        setInterval(updateClock, 1000); // Update jam setiap detik
+        setInterval(updateClock, 1000); 
     };
 </script>
 
